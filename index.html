@@ -8,173 +8,173 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        :root {
+            /* Fallback colors if Telegram vars are missing */
+            --tg-theme-bg-color: #f3f4f6;
+            --tg-theme-secondary-bg-color: #ffffff;
+            --tg-theme-text-color: #1f2937;
+            --tg-theme-hint-color: #9ca3af;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-link-color: #2481cc;
+        }
+
         body {
-            background-color: var(--tg-theme-bg-color, #f3f4f6);
-            color: var(--tg-theme-text-color, #1f2937);
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
             padding-bottom: 90px;
             padding-top: 16px;
             padding-left: 16px;
             padding-right: 16px;
+            transition: background-color 0.3s, color 0.3s;
         }
+
+        /* --- THEME UTILITIES --- */
+        .bg-tg-card { background-color: var(--tg-theme-secondary-bg-color); }
+        .bg-tg-screen { background-color: var(--tg-theme-bg-color); }
+        .text-tg-main { color: var(--tg-theme-text-color); }
+        .text-tg-hint { color: var(--tg-theme-hint-color); }
+        .text-tg-link { color: var(--tg-theme-link-color); }
+        
         .card {
-            background-color: var(--tg-theme-secondary-bg-color, #ffffff);
+            background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
+
+        /* Adaptive Inputs */
+        input {
+            background-color: var(--tg-theme-bg-color) !important;
+            color: var(--tg-theme-text-color) !important;
+            border: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: var(--tg-theme-button-color);
+        }
+        input::placeholder {
+            color: var(--tg-theme-hint-color);
+            opacity: 0.7;
+        }
+
         .btn-primary {
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
         }
-        .btn-ai {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            color: white;
+
+        .btn-secondary-tg {
+            background-color: transparent;
+            border: 1px solid var(--tg-theme-hint-color);
+            color: var(--tg-theme-hint-color);
         }
-        .timer-active {
-            animation: pulse 2s infinite;
+
+        /* Nav Bar */
+        .nav-bar {
+            background-color: var(--tg-theme-secondary-bg-color);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        .loader {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        /* Таббар */
         .tab-item {
             transition: all 0.2s;
-            opacity: 0.5;
+            color: var(--tg-theme-hint-color);
+            opacity: 0.7;
             transform: scale(1);
         }
         .tab-item.active {
             opacity: 1;
-            color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-color);
             transform: scale(1.1);
         }
+
+        /* Animations & Utils */
         .hidden-view { display: none !important; }
+        .timer-active { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .loader { border: 2px solid var(--tg-theme-hint-color); border-top: 2px solid var(--tg-theme-button-color); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .program-item {
-            border-left: 3px solid transparent;
-        }
-        .program-item.completed {
-            border-left-color: #22c55e;
-            opacity: 0.6;
-        }
+        .program-item { border-left: 3px solid transparent; }
+        .program-item.completed { border-left-color: #22c55e; opacity: 0.6; }
         .safe-area-bottom { z-index: 50; }
-        .full-screen-modal { z-index: 100; }
-        .fab-btn { box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
+        .full-screen-modal { z-index: 100; background-color: var(--tg-theme-bg-color); }
+        .fab-btn { box-shadow: 0 4px 12px rgba(0,0,0, 0.2); }
 
-        .chart-bar-container {
-            display: flex;
-            align-items: flex-end;
-            height: 100px;
-            gap: 8px;
-            padding-top: 20px;
-        }
-        .chart-bar {
-            flex: 1;
-            background-color: #3b82f6;
-            border-radius: 4px 4px 0 0;
-            position: relative;
-            transition: height 0.5s ease;
-            min-height: 4px;
-        }
-        .chart-label {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 10px;
-            font-weight: bold;
-            color: #1f2937;
-            white-space: nowrap;
-        }
-        .chart-date {
-            text-align: center;
-            font-size: 8px;
-            margin-top: 4px;
-            opacity: 0.5;
-        }
+        /* Chart */
+        .chart-bar-container { display: flex; align-items: flex-end; height: 100px; gap: 8px; padding-top: 20px; }
+        .chart-bar { flex: 1; background-color: var(--tg-theme-button-color); border-radius: 4px 4px 0 0; position: relative; transition: height 0.5s ease; min-height: 4px; }
+        .chart-label { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: bold; color: var(--tg-theme-text-color); white-space: nowrap; }
+        .chart-date { text-align: center; font-size: 8px; margin-top: 4px; color: var(--tg-theme-hint-color); }
         
-        .search-item:active { background-color: #f3f4f6; }
+        .search-item { border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .search-item:active { background-color: rgba(0,0,0,0.05); }
 
-        .accordion-content {
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-        }
-        .accordion-content.open {
-            max-height: 500px;
-            opacity: 1;
-        }
+        .accordion-content { transition: max-height 0.3s ease-out, opacity 0.3s ease-out; max-height: 0; overflow: hidden; opacity: 0; }
+        .accordion-content.open { max-height: 500px; opacity: 1; }
 
         .ai-suggestion-card {
-            background: linear-gradient(to right, #f5f3ff, #ffffff);
-            border: 1px solid #ddd6fe;
+            background-color: var(--tg-theme-bg-color);
+            border: 1px solid var(--tg-theme-hint-color);
+            opacity: 0.9;
         }
+        
+        /* Modals overrides */
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .modal-body { background-color: var(--tg-theme-secondary-bg-color); }
     </style>
 </head>
 <body class="select-none">
 
     <!-- Вкладка 1: ПРОФИЛЬ -->
     <div id="tab-profile" class="">
-        <h1 class="text-2xl font-bold mb-2">Профиль атлета</h1>
+        <h1 class="text-2xl font-bold mb-2 text-tg-main">Профиль атлета</h1>
         <div class="card p-5 shadow-sm space-y-5 relative overflow-hidden mb-4">
              <div class="flex items-center gap-4 mb-2">
-                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-2xl font-bold text-gray-400">
+                <div class="w-16 h-16 bg-tg-screen rounded-full flex items-center justify-center text-2xl font-bold text-tg-hint">
                     <span id="avatar-initial">?</span>
                 </div>
                 <div class="flex-1">
-                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase">Имя</label>
+                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase text-tg-hint">Имя</label>
                     <input type="text" id="profile-name" placeholder="Твое имя" oninput="syncProfileData()"
-                           class="w-full bg-transparent border-b border-gray-200 py-1 text-lg font-bold focus:border-blue-500 outline-none transition-colors">
+                           class="w-full bg-transparent border-b border-gray-200 py-1 text-lg font-bold focus:border-blue-500 outline-none transition-colors"
+                           style="background-color: transparent !important; padding: 5px 0;">
                 </div>
             </div>
             <div>
-                <label class="block text-[10px] font-bold opacity-50 mb-2 uppercase">Пол</label>
-                <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
-                    <button id="gender-male" onclick="selectGender('male')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all gender-btn-inactive bg-white text-blue-600 shadow-sm">Мужской</button>
-                    <button id="gender-female" onclick="selectGender('female')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400">Женский</button>
+                <label class="block text-[10px] font-bold opacity-50 mb-2 uppercase text-tg-hint">Пол</label>
+                <div class="flex bg-tg-screen rounded-xl p-1 gap-1">
+                    <button id="gender-male" onclick="selectGender('male')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-tg-card shadow-sm text-tg-link">Мужской</button>
+                    <button id="gender-female" onclick="selectGender('female')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-all text-tg-hint">Женский</button>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase">Возраст</label>
-                    <input type="number" id="profile-age" placeholder="25" oninput="syncProfileData()" class="w-full bg-gray-50 rounded-xl p-3 text-center font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase text-tg-hint">Возраст</label>
+                    <input type="number" id="profile-age" placeholder="25" oninput="syncProfileData()" class="w-full rounded-xl p-3 text-center font-bold outline-none">
                 </div>
                 <div>
-                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase">Рост (см)</label>
-                    <input type="number" id="profile-height" placeholder="180" oninput="syncProfileData(); calculateBMI();" class="w-full bg-gray-50 rounded-xl p-3 text-center font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                    <label class="block text-[10px] font-bold opacity-50 mb-1 uppercase text-tg-hint">Рост (см)</label>
+                    <input type="number" id="profile-height" placeholder="180" oninput="syncProfileData(); calculateBMI();" class="w-full rounded-xl p-3 text-center font-bold outline-none">
                 </div>
             </div>
-            <hr class="border-gray-100">
+            <hr class="border-gray-100 opacity-20">
             <div>
-                <label class="block text-[10px] font-bold text-blue-600 mb-1 uppercase">Текущий вес (кг)</label>
+                <label class="block text-[10px] font-bold text-tg-link mb-1 uppercase">Текущий вес (кг)</label>
                 <div class="flex gap-2">
-                    <input type="number" id="profile-weight" placeholder="80.0" step="0.1" class="w-full bg-blue-50 text-blue-900 rounded-xl p-4 text-center text-2xl font-black outline-none focus:ring-2 focus:ring-blue-300">
+                    <input type="number" id="profile-weight" placeholder="80.0" step="0.1" class="w-full rounded-xl p-4 text-center text-2xl font-black outline-none" style="color: var(--tg-theme-button-color) !important;">
                 </div>
                 <div class="flex justify-between items-center mt-2 px-2">
-                    <span class="text-xs font-bold opacity-50 uppercase">ИМТ: <span id="bmi-display">--.--</span></span>
-                    <button onclick="saveCurrentWeight()" class="text-xs font-bold text-blue-500 bg-blue-50 px-3 py-2 rounded-lg active:scale-95 transition-transform">Сохранить вес</button>
+                    <span class="text-xs font-bold opacity-50 uppercase text-tg-hint">ИМТ: <span id="bmi-display">--.--</span></span>
+                    <button onclick="saveCurrentWeight()" class="text-xs font-bold text-tg-link bg-tg-screen px-3 py-2 rounded-lg active:scale-95 transition-transform">Сохранить вес</button>
                 </div>
             </div>
-            <button id="btn-save-profile" onclick="handleProfileButton()" class="btn-primary w-full py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform mt-2 shadow-lg shadow-blue-500/30">НАЧАТЬ ТРЕНИРОВКУ</button>
+            <button id="btn-save-profile" onclick="handleProfileButton()" class="btn-primary w-full py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform mt-2 shadow-lg">НАЧАТЬ ТРЕНИРОВКУ</button>
         </div>
-        <button onclick="toggleWeightChart()" class="w-full bg-white border border-gray-200 p-3 rounded-xl flex items-center justify-center gap-2 mb-4 text-sm font-bold text-gray-600 active:scale-95 transition-all">
+        
+        <button onclick="toggleWeightChart()" class="w-full card p-3 flex items-center justify-center gap-2 mb-4 text-sm font-bold text-tg-hint active:scale-95 transition-all">
             <i data-lucide="bar-chart-2" class="w-4 h-4"></i> График веса <i data-lucide="chevron-down" id="chart-arrow" class="w-4 h-4 transition-transform"></i>
         </button>
+        
         <div id="weight-progress-section" class="accordion-content card px-4 pb-4 mb-6">
             <div id="weight-chart" class="chart-bar-container"></div>
             <div id="weight-chart-dates" class="flex justify-between px-1"></div>
@@ -184,44 +184,50 @@
     <!-- Вкладка 2: ТРЕНИРОВКА -->
     <div id="tab-workout" class="hidden-view">
         <div class="flex justify-between items-center mb-4">
-            <div><h1 class="text-xl font-bold">Тренировка</h1><p id="current-date" class="text-xs opacity-60"></p></div>
+            <div><h1 class="text-xl font-bold text-tg-main">Тренировка</h1><p id="current-date" class="text-xs opacity-60 text-tg-hint"></p></div>
         </div>
 
         <!-- VIEW 1: СЕЛЕКТОР ПРОГРАММЫ -->
         <div id="view-selector" class="animate-in fade-in duration-300">
-            <h2 class="text-lg font-bold mb-3">Что сегодня?</h2>
+            <h2 class="text-lg font-bold mb-3 text-tg-main">Что сегодня?</h2>
             <div class="grid grid-cols-2 gap-3 mb-6">
-                <button onclick="setWorkoutType('strength')" id="type-strength" class="card p-4 flex flex-col items-center gap-2 border-2 border-transparent active:scale-95 transition-all"><span class="text-3xl">🏋️‍♂️</span><span class="font-bold text-sm">Силовая</span></button>
-                <button onclick="setWorkoutType('cardio')" id="type-cardio" class="card p-4 flex flex-col items-center gap-2 border-2 border-transparent active:scale-95 transition-all"><span class="text-3xl">🏃</span><span class="font-bold text-sm">Кардио</span></button>
+                <button onclick="setWorkoutType('strength')" id="type-strength" class="card p-4 flex flex-col items-center gap-2 border-2 border-transparent active:scale-95 transition-all"><span class="text-3xl">🏋️‍♂️</span><span class="font-bold text-sm text-tg-main">Силовая</span></button>
+                <button onclick="setWorkoutType('cardio')" id="type-cardio" class="card p-4 flex flex-col items-center gap-2 border-2 border-transparent active:scale-95 transition-all"><span class="text-3xl">🏃</span><span class="font-bold text-sm text-tg-main">Кардио</span></button>
             </div>
+            
+            <!-- Зоны (Силовая) -->
             <div id="focus-area-strength" class="hidden">
-                <h3 class="text-sm font-bold opacity-50 mb-3 uppercase">Зона воздействия</h3>
+                <h3 class="text-sm font-bold opacity-50 mb-3 uppercase text-tg-hint">Зона воздействия</h3>
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="generateAIProgram('Спина')" class="category-btn bg-white p-3 rounded-xl font-bold text-sm shadow-sm">Спина</button>
-                    <button onclick="generateAIProgram('Грудь')" class="category-btn bg-white p-3 rounded-xl font-bold text-sm shadow-sm">Грудь</button>
-                    <button onclick="generateAIProgram('Ноги')" class="category-btn bg-white p-3 rounded-xl font-bold text-sm shadow-sm">Ноги</button>
-                    <button onclick="generateAIProgram('Руки')" class="category-btn bg-white p-3 rounded-xl font-bold text-sm shadow-sm">Руки</button>
-                    <button onclick="generateAIProgram('Плечи')" class="category-btn bg-white p-3 rounded-xl font-bold text-sm shadow-sm">Плечи</button>
-                    <button onclick="generateAIProgram('Full Body')" class="category-btn bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3 rounded-xl font-bold text-sm shadow-md col-span-2">🔥 Full Body</button>
+                    <!-- Added text-tg-main class to ensure text is visible in dark mode -->
+                    <button onclick="generateAIProgram('Спина')" class="card p-3 font-bold text-sm shadow-sm text-tg-main">Спина</button>
+                    <button onclick="generateAIProgram('Грудь')" class="card p-3 font-bold text-sm shadow-sm text-tg-main">Грудь</button>
+                    <button onclick="generateAIProgram('Ноги')" class="card p-3 font-bold text-sm shadow-sm text-tg-main">Ноги</button>
+                    <button onclick="generateAIProgram('Руки')" class="card p-3 font-bold text-sm shadow-sm text-tg-main">Руки</button>
+                    <button onclick="generateAIProgram('Плечи')" class="card p-3 font-bold text-sm shadow-sm text-tg-main">Плечи</button>
+                    <button onclick="generateAIProgram('Full Body')" class="card p-3 font-bold text-sm shadow-md col-span-2 text-white" style="background: linear-gradient(135deg, var(--tg-theme-button-color), #8b5cf6);">🔥 Full Body</button>
                 </div>
             </div>
+            
+            <!-- Типы (Кардио) -->
             <div id="focus-area-cardio" class="hidden">
-                <h3 class="text-sm font-bold opacity-50 mb-3 uppercase">Тип нагрузки</h3>
+                <h3 class="text-sm font-bold opacity-50 mb-3 uppercase text-tg-hint">Тип нагрузки</h3>
                 <div class="grid grid-cols-1 gap-2">
-                    <button onclick="generateAIProgram('HIIT')" class="category-btn bg-white p-4 rounded-xl font-bold text-sm shadow-sm flex justify-between items-center"><span>🔥 HIIT (Интервальная)</span><span class="text-xs opacity-50">~20 мин</span></button>
-                    <button onclick="generateAIProgram('LISS')" class="category-btn bg-white p-4 rounded-xl font-bold text-sm shadow-sm flex justify-between items-center"><span>🚶 LISS (Низкая интенсивность)</span><span class="text-xs opacity-50">~40-60 мин</span></button>
+                    <button onclick="generateAIProgram('HIIT')" class="card p-4 font-bold text-sm shadow-sm flex justify-between items-center text-tg-main"><span>🔥 HIIT (Интервальная)</span><span class="text-xs opacity-50">~20 мин</span></button>
+                    <button onclick="generateAIProgram('LISS')" class="card p-4 font-bold text-sm shadow-sm flex justify-between items-center text-tg-main"><span>🚶 LISS (Низкая интенсивность)</span><span class="text-xs opacity-50">~40-60 мин</span></button>
                 </div>
             </div>
-            <div class="mt-6 pt-6 border-t border-gray-200">
-                <button onclick="startCustomWorkout()" class="w-full bg-white border-2 border-gray-200 text-gray-500 p-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all"><i data-lucide="edit-3" class="w-4 h-4"></i>Создать свою тренировку</button>
+            
+            <div class="mt-6 pt-6 border-t border-gray-100 opacity-80">
+                <button onclick="startCustomWorkout()" class="w-full card p-4 font-bold text-sm flex items-center justify-center gap-2 active:scale-95 transition-all text-tg-hint border border-dashed border-gray-400"><i data-lucide="edit-3" class="w-4 h-4"></i>Создать свою тренировку</button>
             </div>
         </div>
 
         <!-- VIEW 2: СПИСОК УПРАЖНЕНИЙ (ПРЕВЬЮ/ПЛАН) -->
         <div id="view-plan" class="hidden-view animate-in slide-in-from-right duration-300 relative min-h-screen flex flex-col">
             <div class="flex items-center gap-2 mb-4">
-                <button onclick="backToSelector()" class="bg-gray-200 p-2 rounded-lg text-xs font-bold">← Меню</button>
-                <div class="flex-1"><h2 id="plan-title" class="text-lg font-bold leading-tight">Программа</h2><p class="text-xs opacity-50">Подготовь список и жми старт</p></div>
+                <button onclick="backToSelector()" class="bg-tg-card p-2 rounded-lg text-xs font-bold text-tg-main shadow-sm">← Меню</button>
+                <div class="flex-1"><h2 id="plan-title" class="text-lg font-bold leading-tight text-tg-main">Программа</h2><p class="text-xs opacity-50 text-tg-hint">Подготовь список и жми старт</p></div>
             </div>
             
             <div id="program-list" class="space-y-3 pb-36 flex-1 overflow-y-auto">
@@ -230,30 +236,30 @@
 
             <!-- FAB: Добавить -->
              <div class="fixed bottom-28 right-4 z-50">
-                <button onclick="openAddExerciseModal()" class="fab-btn bg-white text-blue-600 w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-md border border-blue-100">
+                <button onclick="openAddExerciseModal()" class="fab-btn btn-primary w-12 h-12 rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-md">
                     <i data-lucide="plus" class="w-6 h-6"></i>
                 </button>
              </div>
         </div>
 
         <!-- VIEW 3: АКТИВНАЯ ТРЕНИРОВКА -->
-        <div id="view-active-workout" class="hidden-view full-screen-modal animate-in slide-in-from-bottom duration-300 bg-gray-50 fixed inset-0 flex flex-col">
-            <div class="bg-white p-4 shadow-sm flex justify-between items-center">
-                <button onclick="closeActiveMode()" class="bg-gray-100 rounded-full p-2"><i data-lucide="chevron-down" class="w-6 h-6 text-gray-600"></i></button>
-                <div class="text-center"><h3 class="font-bold text-sm text-gray-500 uppercase tracking-wide">Упражнение</h3><div id="active-progress" class="text-xs font-bold text-blue-600">1 из 6</div></div>
-                <button onclick="skipCurrentExercise()" class="text-xs font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-lg">Пропустить</button>
+        <div id="view-active-workout" class="hidden-view full-screen-modal animate-in slide-in-from-bottom duration-300 fixed inset-0 flex flex-col">
+            <div class="bg-tg-card p-4 shadow-sm flex justify-between items-center">
+                <button onclick="closeActiveMode()" class="bg-tg-screen rounded-full p-2"><i data-lucide="chevron-down" class="w-6 h-6 text-tg-hint"></i></button>
+                <div class="text-center"><h3 class="font-bold text-sm text-tg-hint uppercase tracking-wide">Упражнение</h3><div id="active-progress" class="text-xs font-bold text-tg-link">1 из 6</div></div>
+                <button onclick="skipCurrentExercise()" class="text-xs font-bold text-tg-hint bg-tg-screen px-3 py-1.5 rounded-lg">Пропустить</button>
             </div>
             <div class="flex-1 overflow-y-auto p-4 pb-24 flex flex-col">
-                <div class="card p-6 shadow-md mb-4 bg-white flex-1 flex flex-col justify-center min-h-[300px]">
+                <div class="card p-6 shadow-md mb-4 flex-1 flex flex-col justify-center min-h-[300px]">
                     <div class="flex justify-between items-start">
-                        <h2 id="active-ex-name" class="text-2xl font-black text-center mb-2 leading-tight flex-1">Жим лежа</h2>
-                        <button onclick="getAiProTip()" class="bg-purple-100 text-purple-600 p-2 rounded-full active:scale-90 transition-transform"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
+                        <h2 id="active-ex-name" class="text-2xl font-black text-center mb-2 leading-tight flex-1 text-tg-main">Жим лежа</h2>
+                        <button onclick="getAiProTip()" class="bg-tg-screen text-tg-link p-2 rounded-full active:scale-90 transition-transform"><i data-lucide="sparkles" class="w-5 h-5"></i></button>
                     </div>
-                    <p id="active-ex-tip" class="text-sm text-center text-gray-500 mb-6 bg-gray-50 p-2 rounded-lg italic min-h-[3rem] flex items-center justify-center">Следи за техникой</p>
+                    <p id="active-ex-tip" class="text-sm text-center text-tg-hint mb-6 bg-tg-screen p-2 rounded-lg italic min-h-[3rem] flex items-center justify-center">Следи за техникой</p>
                     <div class="flex justify-center gap-1 mb-6" id="sets-dots"></div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-bold opacity-50 mb-1 uppercase text-center">Вес (кг)</label><input type="number" id="active-weight" step="0.5" class="w-full bg-blue-50 border-2 border-blue-100 rounded-2xl p-4 text-center text-3xl font-black focus:border-blue-500 outline-none transition-colors"></div>
-                        <div><label class="block text-xs font-bold opacity-50 mb-1 uppercase text-center">Повторы</label><input type="number" id="active-reps" class="w-full bg-blue-50 border-2 border-blue-100 rounded-2xl p-4 text-center text-3xl font-black focus:border-blue-500 outline-none transition-colors"></div>
+                        <div><label class="block text-xs font-bold opacity-50 mb-1 uppercase text-center text-tg-hint">Вес (кг)</label><input type="number" id="active-weight" step="0.5" class="w-full rounded-2xl p-4 text-center text-3xl font-black outline-none" style="border: 2px solid var(--tg-theme-bg-color);"></div>
+                        <div><label class="block text-xs font-bold opacity-50 mb-1 uppercase text-center text-tg-hint">Повторы</label><input type="number" id="active-reps" class="w-full rounded-2xl p-4 text-center text-3xl font-black outline-none" style="border: 2px solid var(--tg-theme-bg-color);"></div>
                     </div>
                 </div>
                 <div id="active-actions" class="grid grid-cols-1 gap-3">
@@ -271,18 +277,18 @@
 
         <!-- МОДАЛКА ДОБАВЛЕНИЯ -->
         <div id="modal-add-exercise" class="hidden-view full-screen-modal bg-black/50 backdrop-blur-sm fixed inset-0 flex items-end z-[90]">
-            <div class="bg-white w-full rounded-t-2xl p-6 h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
-                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg" id="modal-add-title">Добавить упражнение</h3><button onclick="closeAddExerciseModal()" class="bg-gray-100 rounded-full p-2"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-                <button id="btn-ask-ai" onclick="triggerAiSuggestions()" class="hidden w-full mb-4 bg-gradient-to-r from-purple-100 to-indigo-100 border border-purple-200 p-3 rounded-xl flex items-center justify-center gap-2 text-purple-700 font-bold text-sm active:scale-95 transition-transform"><i data-lucide="sparkles" class="w-4 h-4"></i>Подобрать альтернативы с ИИ</button>
-                <div id="ai-suggestions-container" class="hidden mb-4 p-3 bg-purple-50 rounded-xl border border-purple-100 flex-shrink-0 max-h-[40vh] overflow-y-auto">
-                    <div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-purple-600"></i><span class="text-xs font-bold text-purple-700 uppercase">Советы тренера</span></div><button onclick="hideAiSuggestions()" class="text-purple-400"><i data-lucide="x-circle" class="w-4 h-4"></i></button></div>
+            <div class="bg-tg-card w-full rounded-t-2xl p-6 h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+                <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-lg text-tg-main" id="modal-add-title">Добавить упражнение</h3><button onclick="closeAddExerciseModal()" class="bg-tg-screen rounded-full p-2"><i data-lucide="x" class="w-4 h-4 text-tg-hint"></i></button></div>
+                <button id="btn-ask-ai" onclick="triggerAiSuggestions()" class="hidden w-full mb-4 border border-tg-link p-3 rounded-xl flex items-center justify-center gap-2 text-tg-link font-bold text-sm active:scale-95 transition-transform"><i data-lucide="sparkles" class="w-4 h-4"></i>Подобрать альтернативы с ИИ</button>
+                <div id="ai-suggestions-container" class="hidden mb-4 p-3 bg-tg-screen rounded-xl border border-tg-hint flex-shrink-0 max-h-[40vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-2"><div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4 text-tg-link"></i><span class="text-xs font-bold text-tg-link uppercase">Советы тренера</span></div><button onclick="hideAiSuggestions()" class="text-tg-hint"><i data-lucide="x-circle" class="w-4 h-4"></i></button></div>
                     <div id="ai-suggestions-list" class="space-y-2"></div>
                 </div>
-                <div class="flex bg-gray-100 rounded-xl p-1 gap-1 mb-4 shrink-0"><button id="tab-add-strength" onclick="setAddTab('strength')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm">Силовая</button><button id="tab-add-cardio" onclick="setAddTab('cardio')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400">Кардио</button></div>
-                <div class="relative mb-4 shrink-0"><i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i><input type="text" id="search-exercise" placeholder="Поиск упражнения..." oninput="filterExercises()" class="w-full bg-gray-50 pl-10 pr-4 py-3 rounded-xl font-bold outline-none border border-gray-100 focus:border-blue-400"></div>
+                <div class="flex bg-tg-screen rounded-xl p-1 gap-1 mb-4 shrink-0"><button id="tab-add-strength" onclick="setAddTab('strength')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-tg-card shadow-sm text-tg-link">Силовая</button><button id="tab-add-cardio" onclick="setAddTab('cardio')" class="flex-1 py-2 rounded-lg text-xs font-bold transition-all text-tg-hint">Кардио</button></div>
+                <div class="relative mb-4 shrink-0"><i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-tg-hint"></i><input type="text" id="search-exercise" placeholder="Поиск упражнения..." oninput="filterExercises()" class="w-full bg-tg-screen pl-10 pr-4 py-3 rounded-xl font-bold outline-none border border-transparent focus:border-tg-link"></div>
                 <div id="exercise-search-results" class="flex-1 overflow-y-auto space-y-1 mb-4 pr-1"></div>
-                <div class="pt-4 border-t border-gray-100 shrink-0">
-                    <div id="manual-inputs" class="grid grid-cols-2 gap-2 mb-2 hidden"><input type="number" id="manual-sets" placeholder="Подходы" value="3" class="bg-gray-50 p-2 rounded-lg text-center text-sm font-bold"><input type="text" id="manual-reps" placeholder="Повторы" value="12" class="bg-gray-50 p-2 rounded-lg text-center text-sm font-bold"></div>
+                <div class="pt-4 border-t border-gray-100 opacity-50 shrink-0">
+                    <div id="manual-inputs" class="grid grid-cols-2 gap-2 mb-2 hidden"><input type="number" id="manual-sets" placeholder="Подходы" value="3" class="bg-tg-screen p-2 rounded-lg text-center text-sm font-bold"><input type="text" id="manual-reps" placeholder="Повторы" value="12" class="bg-tg-screen p-2 rounded-lg text-center text-sm font-bold"></div>
                     <button id="btn-add-manual" onclick="addExerciseFromInput()" class="btn-primary w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i><span id="btn-add-text">Добавить свое</span></button>
                 </div>
             </div>
@@ -290,57 +296,56 @@
 
         <!-- МОДАЛКА ИНФО -->
         <div id="modal-info" class="hidden-view full-screen-modal bg-black/50 backdrop-blur-sm fixed inset-0 flex items-center justify-center z-[100] p-4">
-            <div class="bg-white w-full max-w-sm rounded-2xl p-6 animate-in zoom-in-95 duration-200 shadow-2xl">
-                <div class="flex justify-between items-start mb-4"><h3 id="info-title" class="font-bold text-lg pr-4">Упражнение</h3><button onclick="closeInfoModal()" class="bg-gray-100 rounded-full p-2 shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-                <div class="bg-blue-50 p-4 rounded-xl text-sm text-blue-900 leading-relaxed max-h-[60vh] overflow-y-auto"><p id="info-description" class="whitespace-pre-line">Загрузка...</p></div>
-                <button onclick="closeInfoModal()" class="w-full mt-4 bg-gray-100 py-3 rounded-xl font-bold text-sm">Понятно</button>
+            <div class="bg-tg-card w-full max-w-sm rounded-2xl p-6 animate-in zoom-in-95 duration-200 shadow-2xl">
+                <div class="flex justify-between items-start mb-4"><h3 id="info-title" class="font-bold text-lg pr-4 text-tg-main">Упражнение</h3><button onclick="closeInfoModal()" class="bg-tg-screen rounded-full p-2 shrink-0"><i data-lucide="x" class="w-4 h-4 text-tg-hint"></i></button></div>
+                <div class="bg-tg-screen p-4 rounded-xl text-sm text-tg-main leading-relaxed max-h-[60vh] overflow-y-auto"><p id="info-description" class="whitespace-pre-line">Загрузка...</p></div>
+                <button onclick="closeInfoModal()" class="w-full mt-4 bg-tg-screen py-3 rounded-xl font-bold text-sm text-tg-link">Понятно</button>
             </div>
         </div>
 
         <!-- ИТОГИ ТРЕНИРОВКИ -->
-        <div id="modal-workout-summary" class="hidden-view full-screen-modal bg-white fixed inset-0 flex flex-col z-[110] animate-in slide-in-from-bottom duration-300">
+        <div id="modal-workout-summary" class="hidden-view full-screen-modal bg-tg-card fixed inset-0 flex flex-col z-[110] animate-in slide-in-from-bottom duration-300">
             <div class="p-6 bg-gradient-to-b from-purple-600 to-indigo-700 text-white rounded-b-3xl shadow-xl mb-4"><h2 class="text-3xl font-black mb-1">Тренировка завершена!</h2><p class="opacity-80 text-sm">Отличная работа, атлет 💪</p></div>
             <div class="flex-1 overflow-y-auto p-4 space-y-4">
-                <div class="bg-purple-50 p-5 rounded-2xl border border-purple-100 relative overflow-hidden">
-                    <div class="absolute -top-2 -right-2 w-16 h-16 bg-purple-200 rounded-full blur-2xl"></div>
+                <div class="bg-tg-screen p-5 rounded-2xl border border-transparent relative overflow-hidden">
                     <div class="flex items-center gap-2 mb-3"><i data-lucide="sparkles" class="w-5 h-5 text-purple-600"></i><h3 class="font-bold text-purple-900 uppercase text-xs tracking-wider">Анализ & Восстановление</h3></div>
-                    <div id="summary-ai-content" class="text-sm text-purple-800 leading-relaxed space-y-2"><div class="flex items-center gap-2"><div class="loader border-purple-300 border-t-purple-600"></div><span class="animate-pulse">ИИ анализирует нагрузку...</span></div></div>
+                    <div id="summary-ai-content" class="text-sm text-tg-main leading-relaxed space-y-2"><div class="flex items-center gap-2"><div class="loader border-purple-300 border-t-purple-600"></div><span class="animate-pulse">ИИ анализирует нагрузку...</span></div></div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-gray-50 p-4 rounded-2xl text-center"><div id="summary-total-exercises" class="text-2xl font-black text-gray-800">0</div><div class="text-xs text-gray-400 font-bold uppercase">Упражнений</div></div>
-                    <div class="bg-gray-50 p-4 rounded-2xl text-center"><div id="summary-total-sets" class="text-2xl font-black text-gray-800">0</div><div class="text-xs text-gray-400 font-bold uppercase">Подходов</div></div>
+                    <div class="bg-tg-screen p-4 rounded-2xl text-center"><div id="summary-total-exercises" class="text-2xl font-black text-tg-main">0</div><div class="text-xs text-tg-hint font-bold uppercase">Упражнений</div></div>
+                    <div class="bg-tg-screen p-4 rounded-2xl text-center"><div id="summary-total-sets" class="text-2xl font-black text-tg-main">0</div><div class="text-xs text-tg-hint font-bold uppercase">Подходов</div></div>
                 </div>
             </div>
-            <div class="p-4 border-t border-gray-100"><button onclick="closeSummaryAndSave()" class="w-full bg-gray-900 text-white py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform">Сохранить в историю</button></div>
+            <div class="p-4 border-t border-gray-100 opacity-50"><button onclick="closeSummaryAndSave()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg active:scale-95 transition-transform">Сохранить в историю</button></div>
         </div>
     </div>
 
     <!-- Вкладка 3: ИСТОРИЯ -->
     <div id="tab-history" class="hidden-view">
-        <h1 class="text-2xl font-bold mb-2">История</h1>
-        <p class="text-sm opacity-60 mb-6">Твой путь к успеху</p>
+        <h1 class="text-2xl font-bold mb-2 text-tg-main">История</h1>
+        <p class="text-sm opacity-60 mb-6 text-tg-hint">Твой путь к успеху</p>
         <div class="mb-6"><button onclick="analyzeHistory()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-purple-200 active:scale-95 transition-transform"><i data-lucide="brain-circuit" class="w-5 h-5"></i>AI Анализ прогресса</button></div>
-        <div id="history-ai-result" class="hidden mb-6 p-4 bg-purple-50 rounded-xl border border-purple-100 animate-in fade-in">
-            <div class="flex justify-between items-start mb-2"><h3 class="font-bold text-purple-800 text-sm flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Вердикт тренера</h3><button onclick="closeHistoryAi()" class="text-purple-400"><i data-lucide="x" class="w-4 h-4"></i></button></div>
-            <p id="history-ai-text" class="text-sm text-purple-900 leading-relaxed whitespace-pre-line"></p>
+        <div id="history-ai-result" class="hidden mb-6 p-4 bg-tg-card rounded-xl border border-tg-hint animate-in fade-in">
+            <div class="flex justify-between items-start mb-2"><h3 class="font-bold text-tg-link text-sm flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> Вердикт тренера</h3><button onclick="closeHistoryAi()" class="text-tg-hint"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <p id="history-ai-text" class="text-sm text-tg-main leading-relaxed whitespace-pre-line"></p>
         </div>
-        <div id="history-list" class="space-y-3 pb-24"><div class="text-center py-10 opacity-40 text-sm">Пока нет завершенных тренировок</div></div>
+        <div id="history-list" class="space-y-3 pb-24"><div class="text-center py-10 opacity-40 text-sm text-tg-hint">Пока нет завершенных тренировок</div></div>
     </div>
 
     <!-- ДЕТАЛИ ИСТОРИИ -->
-    <div id="modal-history-detail" class="hidden-view full-screen-modal bg-gray-50 fixed inset-0 flex flex-col z-[60] animate-in slide-in-from-right duration-300">
-        <div class="bg-white p-4 shadow-sm flex items-center gap-3"><button onclick="closeHistoryDetail()" class="bg-gray-100 p-2 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5"></i></button><div><h3 id="hist-detail-title" class="font-bold text-lg leading-tight">Тренировка</h3><p id="hist-detail-date" class="text-xs opacity-50">Дата</p></div></div>
+    <div id="modal-history-detail" class="hidden-view full-screen-modal bg-tg-screen fixed inset-0 flex flex-col z-[60] animate-in slide-in-from-right duration-300">
+        <div class="bg-tg-card p-4 shadow-sm flex items-center gap-3"><button onclick="closeHistoryDetail()" class="bg-tg-screen p-2 rounded-lg"><i data-lucide="arrow-left" class="w-5 h-5 text-tg-main"></i></button><div><h3 id="hist-detail-title" class="font-bold text-lg leading-tight text-tg-main">Тренировка</h3><p id="hist-detail-date" class="text-xs opacity-50 text-tg-hint">Дата</p></div></div>
         <div id="hist-detail-content" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
     </div>
 
     <!-- Таббар -->
-    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-3 pb-6 safe-area-bottom shadow-lg z-40">
+    <div class="nav-bar fixed bottom-0 left-0 right-0 flex justify-around py-3 pb-6 safe-area-bottom shadow-lg z-40">
         <button onclick="switchTab('profile')" id="nav-profile" class="tab-item flex flex-col items-center gap-1 active"><i data-lucide="user" class="w-6 h-6"></i><span class="text-[10px] font-bold">Профиль</span></button>
         <button onclick="switchTab('workout')" id="nav-workout" class="tab-item flex flex-col items-center gap-1"><i data-lucide="dumbbell" class="w-6 h-6"></i><span class="text-[10px] font-bold">Тренировка</span></button>
         <button onclick="switchTab('history')" id="nav-history" class="tab-item flex flex-col items-center gap-1"><i data-lucide="calendar-clock" class="w-6 h-6"></i><span class="text-[10px] font-bold">История</span></button>
     </div>
 
-    <div id="ai-loading" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl w-64 text-center"><div class="loader"></div><p id="loading-text" class="text-sm font-bold text-gray-700 animate-pulse">ИИ составляет план...</p></div></div>
+    <div id="ai-loading" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] backdrop-blur-sm"><div class="bg-tg-card p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl w-64 text-center"><div class="loader"></div><p id="loading-text" class="text-sm font-bold text-tg-main animate-pulse">ИИ составляет план...</p></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
@@ -457,8 +462,8 @@
         window.syncProfileData = function() { if(userProfile.isLocked) return; userProfile.name = document.getElementById('profile-name').value; userProfile.age = document.getElementById('profile-age').value; userProfile.height = document.getElementById('profile-height').value; userProfile.weight = parseFloat(document.getElementById('profile-weight').value) || ""; updateAvatarInitial(userProfile.name); persistData(); }
         window.saveCurrentWeight = function() { const w = parseFloat(document.getElementById('profile-weight').value); if (!w) return; const dateStr = new Date().toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'}); userProfile.weightHistory.push({ weight: w, date: dateStr }); if(userProfile.weightHistory.length > 7) userProfile.weightHistory.shift(); persistData(); tg.HapticFeedback.notificationOccurred('success'); renderWeightChart(); alert(`Вес ${w} кг сохранен!`); }
         window.toggleWeightChart = function() { const section = document.getElementById('weight-progress-section'); const arrow = document.getElementById('chart-arrow'); section.classList.toggle('open'); arrow.style.transform = section.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; if (section.classList.contains('open')) renderWeightChart(); }
-        window.renderWeightChart = function() { const container = document.getElementById('weight-chart'); const datesContainer = document.getElementById('weight-chart-dates'); if (userProfile.weightHistory.length < 2) { container.innerHTML = '<div class="w-full text-center text-xs opacity-50 pb-4">Нужно минимум 2 замера</div>'; return; } const weights = userProfile.weightHistory.map(x => x.weight); const minW = Math.min(...weights) - 2; const maxW = Math.max(...weights) + 2; const range = maxW - minW; container.innerHTML = userProfile.weightHistory.map(entry => { const heightPct = ((entry.weight - minW) / range) * 80 + 20; return `<div class="chart-bar" style="height: ${heightPct}%"><span class="chart-label">${entry.weight}</span></div>`; }).join(''); datesContainer.innerHTML = userProfile.weightHistory.map(entry => `<div style="flex:1" class="chart-date">${entry.date}</div>`).join(''); }
-        window.selectGender = function(gender) { if (userProfile.isLocked && gender !== userProfile.gender) return; userProfile.gender = gender; const btnMale = document.getElementById('gender-male'); const btnFemale = document.getElementById('gender-female'); if (gender === 'male') { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-blue-600 shadow-sm"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; } else { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-pink-600 shadow-sm"; } persistData(); }
+        window.renderWeightChart = function() { const container = document.getElementById('weight-chart'); const datesContainer = document.getElementById('weight-chart-dates'); if (userProfile.weightHistory.length < 2) { container.innerHTML = '<div class="w-full text-center text-xs opacity-50 pb-4 text-tg-hint">Нужно минимум 2 замера</div>'; return; } const weights = userProfile.weightHistory.map(x => x.weight); const minW = Math.min(...weights) - 2; const maxW = Math.max(...weights) + 2; const range = maxW - minW; container.innerHTML = userProfile.weightHistory.map(entry => { const heightPct = ((entry.weight - minW) / range) * 80 + 20; return `<div class="chart-bar" style="height: ${heightPct}%"><span class="chart-label">${entry.weight}</span></div>`; }).join(''); datesContainer.innerHTML = userProfile.weightHistory.map(entry => `<div style="flex:1" class="chart-date">${entry.date}</div>`).join(''); }
+        window.selectGender = function(gender) { if (userProfile.isLocked && gender !== userProfile.gender) return; userProfile.gender = gender; const btnMale = document.getElementById('gender-male'); const btnFemale = document.getElementById('gender-female'); if (gender === 'male') { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-tg-card shadow-sm text-tg-link"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-tg-hint"; } else { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-tg-hint"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-tg-card shadow-sm text-pink-600"; } persistData(); }
         window.calculateBMI = function() { const h = parseFloat(document.getElementById('profile-height').value); const w = parseFloat(document.getElementById('profile-weight').value); const display = document.getElementById('bmi-display'); if (h > 0 && w > 0) { const bmi = w / ((h / 100) ** 2); display.innerText = bmi.toFixed(1); } else { display.innerText = "--.--"; } }
         window.handleProfileButton = function() { if (!userProfile.isLocked) saveAndLockProfile(); else switchTab('workout'); }
         window.saveAndLockProfile = function() { syncProfileData(); if (!userProfile.name || !userProfile.weight || !userProfile.height || !userProfile.age) { tg.HapticFeedback.notificationOccurred('error'); alert("Заполни все поля!"); return; } userProfile.isLocked = true; ['profile-name', 'profile-age', 'profile-height'].forEach(id => { document.getElementById(id).disabled = true; document.getElementById(id).classList.add('opacity-50'); }); document.getElementById('btn-save-profile').innerText = "К ТРЕНИРОВКЕ"; saveCurrentWeight(); persistData(); tg.HapticFeedback.notificationOccurred('success'); switchTab('workout'); }
@@ -518,15 +523,15 @@
             document.getElementById('plan-title').innerText = `${title}`;
             const list = document.getElementById('program-list');
             if (currentProgram.length === 0) {
-                 list.innerHTML = `<div class="text-center py-10 opacity-50 text-sm">Список пуст.<br>Добавь упражнения.</div><button onclick="openAddExerciseModal()" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold flex items-center justify-center gap-2 active:bg-gray-50"><i data-lucide="plus" class="w-5 h-5"></i> Добавить упражнение</button>`;
+                 list.innerHTML = `<div class="text-center py-10 opacity-50 text-sm text-tg-hint">Список пуст.<br>Добавь упражнения.</div><button onclick="openAddExerciseModal()" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-tg-hint font-bold flex items-center justify-center gap-2 active:bg-gray-50"><i data-lucide="plus" class="w-5 h-5"></i> Добавить упражнение</button>`;
             } else {
                 let html = currentProgram.map((ex, index) => {
                     const isDone = workoutLogs[ex.name] && workoutLogs[ex.name].length >= ex.sets;
-                    return `<div class="program-item ${isDone ? 'completed' : 'bg-white'} card flex items-stretch shadow-sm relative overflow-hidden group"><div onclick="showExerciseInfo(${index})" class="flex-1 p-4 active:bg-gray-50 transition-colors cursor-pointer"><h4 class="font-bold text-md ${isDone ? 'line-through opacity-50' : ''}">${ex.name}</h4><p class="text-xs text-gray-500">${ex.sets} x ${ex.reps}</p></div><div class="flex items-center px-2 bg-gray-50/50 border-l border-gray-100 gap-1"><button onclick="showExerciseInfo(${index})" class="p-2 rounded-full text-blue-400 hover:bg-blue-100 transition-colors"><i data-lucide="info" class="w-5 h-5"></i></button>${!isDone ? `<button onclick="replaceExercise(${index})" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 transition-colors"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>` : ''}<div class="p-2"><i data-lucide="${isDone ? 'check-circle' : 'chevron-right'}" class="w-5 h-5 ${isDone ? 'text-green-500' : 'text-gray-300'}"></i></div></div></div>`;
+                    return `<div class="program-item ${isDone ? 'completed' : 'bg-tg-card'} card flex items-stretch shadow-sm relative overflow-hidden group"><div onclick="showExerciseInfo(${index})" class="flex-1 p-4 active:bg-gray-50 transition-colors cursor-pointer"><h4 class="font-bold text-md text-tg-main ${isDone ? 'line-through opacity-50' : ''}">${ex.name}</h4><p class="text-xs text-tg-hint">${ex.sets} x ${ex.reps}</p></div><div class="flex items-center px-2 bg-gray-50/50 border-l border-gray-100 gap-1"><button onclick="showExerciseInfo(${index})" class="p-2 rounded-full text-blue-400 hover:bg-blue-100 transition-colors"><i data-lucide="info" class="w-5 h-5"></i></button>${!isDone ? `<button onclick="replaceExercise(${index})" class="p-2 rounded-full text-gray-400 hover:bg-gray-200 transition-colors"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>` : ''}<div class="p-2"><i data-lucide="${isDone ? 'check-circle' : 'chevron-right'}" class="w-5 h-5 ${isDone ? 'text-green-500' : 'text-gray-300'}"></i></div></div></div>`;
                 }).join('');
                 
                 const hasLogs = Object.keys(workoutLogs).length > 0;
-                html += `<div class="flex flex-col gap-3 mt-6 mb-8"><button onclick="openAddExerciseModal()" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 font-bold flex items-center justify-center gap-2 active:bg-gray-50"><i data-lucide="plus" class="w-5 h-5"></i> Добавить упражнение</button>${hasLogs ? `<button onclick="finishWorkout()" class="w-full bg-green-500 text-white px-4 py-4 rounded-2xl font-black text-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform"><i data-lucide="flag" class="w-6 h-6"></i> ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>` : `<button onclick="startWorkoutRoutine()" class="btn-primary w-full py-4 rounded-2xl font-black text-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform border-b-4 border-blue-700"><i data-lucide="play" class="w-6 h-6 fill-current"></i> СТАРТ ТРЕНИРОВКИ</button>`}</div>`;
+                html += `<div class="flex flex-col gap-3 mt-6 mb-8"><button onclick="openAddExerciseModal()" class="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-tg-hint font-bold flex items-center justify-center gap-2 active:bg-gray-50"><i data-lucide="plus" class="w-5 h-5"></i> Добавить упражнение</button>${hasLogs ? `<button onclick="finishWorkout()" class="w-full bg-green-600 text-white px-4 py-4 rounded-2xl font-black text-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform"><i data-lucide="flag" class="w-6 h-6"></i> ЗАВЕРШИТЬ ТРЕНИРОВКУ</button>` : `<button onclick="startWorkoutRoutine()" class="btn-primary w-full py-4 rounded-2xl font-black text-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-transform border-b-4 border-blue-700"><i data-lucide="play" class="w-6 h-6 fill-current"></i> СТАРТ ТРЕНИРОВКИ</button>`}</div>`;
                 list.innerHTML = html;
             }
             lucide.createIcons();
@@ -587,7 +592,7 @@
                 if(!document.getElementById('btn-extra-set')) {
                     const extraBtn = document.createElement('button');
                     extraBtn.id = 'btn-extra-set';
-                    extraBtn.className = "w-full py-3 text-sm font-bold text-gray-400 mt-2";
+                    extraBtn.className = "w-full py-3 text-sm font-bold text-tg-hint mt-2";
                     extraBtn.innerText = "Сделать еще подход";
                     extraBtn.onclick = () => {
                         btn.innerHTML = `<i data-lucide="check" class="w-6 h-6"></i> ЗАПИСАТЬ ПОДХОД`;
@@ -697,11 +702,11 @@
 
         window.renderHistoryList = function() {
             const list = document.getElementById('history-list');
-            if (userProfile.workoutHistory.length === 0) { list.innerHTML = `<div class="text-center py-10 opacity-40 text-sm">Пока нет завершенных тренировок</div>`; return; }
+            if (userProfile.workoutHistory.length === 0) { list.innerHTML = `<div class="text-center py-10 opacity-40 text-sm text-tg-hint">Пока нет завершенных тренировок</div>`; return; }
             list.innerHTML = [...userProfile.workoutHistory].reverse().map(session => {
                 let totalSets = 0; let totalExercises = Object.keys(session.logs).length;
                 Object.values(session.logs).forEach(sets => totalSets += sets.length);
-                return `<div onclick="openHistoryDetail(${session.id})" class="card p-4 flex justify-between items-center active:scale-[0.98] transition-transform"><div><div class="text-[10px] font-bold opacity-50 uppercase mb-1">${session.date}</div><h3 class="font-bold text-md">${session.title}</h3><div class="text-xs text-gray-500 mt-1">${totalExercises} упр. • ${totalSets} подходов</div></div><i data-lucide="chevron-right" class="text-gray-300 w-5 h-5"></i></div>`;
+                return `<div onclick="openHistoryDetail(${session.id})" class="card p-4 flex justify-between items-center active:scale-[0.98] transition-transform"><div><div class="text-[10px] font-bold opacity-50 uppercase mb-1">${session.date}</div><h3 class="font-bold text-md text-tg-main">${session.title}</h3><div class="text-xs text-tg-hint mt-1">${totalExercises} упр. • ${totalSets} подходов</div></div><i data-lucide="chevron-right" class="text-gray-300 w-5 h-5"></i></div>`;
             }).join('');
             lucide.createIcons();
         }
@@ -713,7 +718,7 @@
             document.getElementById('hist-detail-date').innerText = session.date;
             const content = document.getElementById('hist-detail-content');
             if (Object.keys(session.logs).length === 0) { content.innerHTML = `<div class="text-center text-sm opacity-50">Пустая тренировка</div>`; } else {
-                content.innerHTML = Object.entries(session.logs).map(([name, sets]) => `<div class="bg-white p-4 rounded-xl border border-gray-100"><h4 class="font-bold text-sm mb-2 text-blue-900">${name}</h4><div class="space-y-1">${sets.map((set, i) => `<div class="flex justify-between text-xs border-b border-gray-50 pb-1 last:border-0"><span class="opacity-50">#${i+1}</span><span class="font-bold">${set.weight} кг × ${set.reps}</span></div>`).join('')}</div></div>`).join('');
+                content.innerHTML = Object.entries(session.logs).map(([name, sets]) => `<div class="bg-tg-card p-4 rounded-xl border border-gray-100"><h4 class="font-bold text-sm mb-2 text-tg-link">${name}</h4><div class="space-y-1">${sets.map((set, i) => `<div class="flex justify-between text-xs border-b border-gray-50 pb-1 last:border-0"><span class="opacity-50 text-tg-hint">#${i+1}</span><span class="font-bold text-tg-main">${set.weight} кг × ${set.reps}</span></div>`).join('')}</div></div>`).join('');
             }
             document.getElementById('modal-history-detail').classList.remove('hidden-view');
         }
@@ -749,7 +754,7 @@
         window.openAddExerciseModal = function() { replacementIndex = null; document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.add('hidden'); document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = "Добавить упражнение"; document.getElementById('search-exercise').value = ""; setAddTab('strength'); document.getElementById('search-exercise').focus(); }
         window.closeAddExerciseModal = function() { document.getElementById('modal-add-exercise').classList.add('hidden-view'); }
         window.setAddTab = function(type) { addModalType = type; const btnS = document.getElementById('tab-add-strength'); const btnC = document.getElementById('tab-add-cardio'); if (type === 'strength') { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; } else { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; } filterExercises(); }
-        window.filterExercises = function() { const query = document.getElementById('search-exercise').value.toLowerCase(); const list = EXERCISE_DB[addModalType]; const container = document.getElementById('exercise-search-results'); const filtered = list.filter(ex => ex.toLowerCase().includes(query)); const btnText = document.getElementById('btn-add-text'); const btnManual = document.getElementById('btn-add-manual'); const inputsManual = document.getElementById('manual-inputs'); if (query.length > 0) { btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`; btnManual.classList.remove('opacity-50', 'pointer-events-none'); inputsManual.classList.remove('hidden'); } else { btnText.innerText = "Введи название выше..."; btnManual.classList.add('opacity-50', 'pointer-events-none'); inputsManual.classList.add('hidden'); } const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle'; container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join(''); lucide.createIcons(); }
+        window.filterExercises = function() { const query = document.getElementById('search-exercise').value.toLowerCase(); const list = EXERCISE_DB[addModalType]; const container = document.getElementById('exercise-search-results'); const filtered = list.filter(ex => ex.toLowerCase().includes(query)); const btnText = document.getElementById('btn-add-text'); const btnManual = document.getElementById('btn-add-manual'); const inputsManual = document.getElementById('manual-inputs'); if (query.length > 0) { btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`; btnManual.classList.remove('opacity-50', 'pointer-events-none'); inputsManual.classList.remove('hidden'); } else { btnText.innerText = "Введи название выше..."; btnManual.classList.add('opacity-50', 'pointer-events-none'); inputsManual.classList.add('hidden'); } const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle'; container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm text-tg-main">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join(''); lucide.createIcons(); }
         window.addExerciseDirectly = function(name) { const isCardio = addModalType === 'cardio'; const newEx = { name: name, sets: isCardio ? 1 : 3, reps: isCardio ? "20 мин" : "12", tip: "Техника важна!", description: "Описание добавлено вручную." }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
         window.addExerciseFromInput = function() { const name = document.getElementById('search-exercise').value; if(!name) return; const sets = document.getElementById('manual-sets').value; const reps = document.getElementById('manual-reps').value; const newEx = { name: name, sets: parseInt(sets) || 3, reps: reps || "12", tip: "Соблюдай технику", description: "Добавлено вручную" }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
         window.getAiProTip = async function() { const ex = currentProgram[currentExerciseIndex]; const tipEl = document.getElementById('active-ex-tip'); tipEl.innerHTML = `<span class="animate-pulse text-purple-600">Спрашиваю у тренера...</span>`; const prompt = `Дай ОДИН короткий, профессиональный совет по биомеханике (лайфхак) для упражнения "${ex.name}", чтобы лучше чувствовать целевую мышцу. Максимум 10-12 слов.`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Концентрируйся на работе мышц."; tipEl.innerText = "💡 " + text; tipEl.classList.add("bg-purple-50", "text-purple-800", "border", "border-purple-200"); } catch (e) { tipEl.innerText = "Ошибка связи с тренером."; } }
