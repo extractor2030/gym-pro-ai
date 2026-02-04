@@ -389,6 +389,7 @@
         let workoutLogs = {};
         let addModalType = 'strength';
         let isWorkoutActive = false;
+        let searchDebounceTimer;
 
         async function saveToFirestore() {
             if (!db) return;
@@ -754,7 +755,68 @@
         window.openAddExerciseModal = function() { replacementIndex = null; document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.add('hidden'); document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = "Добавить упражнение"; document.getElementById('search-exercise').value = ""; setAddTab('strength'); document.getElementById('search-exercise').focus(); }
         window.closeAddExerciseModal = function() { document.getElementById('modal-add-exercise').classList.add('hidden-view'); }
         window.setAddTab = function(type) { addModalType = type; const btnS = document.getElementById('tab-add-strength'); const btnC = document.getElementById('tab-add-cardio'); if (type === 'strength') { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; } else { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; } filterExercises(); }
-        window.filterExercises = function() { const query = document.getElementById('search-exercise').value.toLowerCase(); const list = EXERCISE_DB[addModalType]; const container = document.getElementById('exercise-search-results'); const filtered = list.filter(ex => ex.toLowerCase().includes(query)); const btnText = document.getElementById('btn-add-text'); const btnManual = document.getElementById('btn-add-manual'); const inputsManual = document.getElementById('manual-inputs'); if (query.length > 0) { btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`; btnManual.classList.remove('opacity-50', 'pointer-events-none'); inputsManual.classList.remove('hidden'); } else { btnText.innerText = "Введи название выше..."; btnManual.classList.add('opacity-50', 'pointer-events-none'); inputsManual.classList.add('hidden'); } const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle'; container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm text-tg-main">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join(''); lucide.createIcons(); }
+        
+        async function searchExercisesWithAi(query) {
+            const container = document.getElementById('exercise-search-results');
+            if (!document.getElementById('ai-search-loader')) {
+                container.insertAdjacentHTML('beforeend', `<div id="ai-search-loader" class="p-3 flex items-center justify-center gap-2 opacity-50"><div class="loader border-gray-300 border-t-blue-500 w-4 h-4"></div><span class="text-xs">ИИ ищет варианты...</span></div>`);
+            }
+            const prompt = `Пользователь ищет упражнение по запросу "${query}". Предложи до 5 названий популярных упражнений, которые подходят под этот запрос. Верни ТОЛЬКО валидный JSON массив строк. Например: ["Шраги с гантелями", "Шраги со штангой"]. Если ничего не найдено, верни пустой массив.`;
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                const result = await response.json();
+                let text = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const aiExercises = JSON.parse(text);
+                const currentList = Array.from(container.querySelectorAll('.search-item span')).map(el => el.innerText);
+                const uniqueAiEx = aiExercises.filter(ex => !currentList.includes(ex));
+                const loader = document.getElementById('ai-search-loader');
+                if(loader) loader.remove();
+                if (uniqueAiEx.length > 0) {
+                    const html = uniqueAiEx.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50 animate-in fade-in"><span class="font-bold text-sm text-tg-main">${ex}</span><div class="flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3 text-purple-500"></i><i data-lucide="plus-circle" class="w-4 h-4 text-blue-500"></i></div></div>`).join('');
+                    container.insertAdjacentHTML('beforeend', html);
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.error(e);
+                const loader = document.getElementById('ai-search-loader');
+                if(loader) loader.remove();
+            }
+        }
+
+        window.filterExercises = function() {
+            const query = document.getElementById('search-exercise').value.toLowerCase();
+            const list = EXERCISE_DB[addModalType];
+            const container = document.getElementById('exercise-search-results');
+            const btnText = document.getElementById('btn-add-text');
+            const btnManual = document.getElementById('btn-add-manual');
+            const inputsManual = document.getElementById('manual-inputs');
+
+            if (query.length > 0) {
+                btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`;
+                btnManual.classList.remove('opacity-50', 'pointer-events-none');
+                inputsManual.classList.remove('hidden');
+            } else {
+                btnText.innerText = "Введи название выше...";
+                btnManual.classList.add('opacity-50', 'pointer-events-none');
+                inputsManual.classList.add('hidden');
+                container.innerHTML = '';
+                return;
+            }
+
+            const filtered = list.filter(ex => ex.toLowerCase().includes(query));
+            const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle';
+            
+            container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm text-tg-main">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join('');
+            lucide.createIcons();
+
+            clearTimeout(searchDebounceTimer);
+            if (query.length > 2) {
+                searchDebounceTimer = setTimeout(() => searchExercisesWithAi(query), 800);
+            }
+        }
+
         window.addExerciseDirectly = function(name) { const isCardio = addModalType === 'cardio'; const newEx = { name: name, sets: isCardio ? 1 : 3, reps: isCardio ? "20 мин" : "12", tip: "Техника важна!", description: "Описание добавлено вручную." }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
         window.addExerciseFromInput = function() { const name = document.getElementById('search-exercise').value; if(!name) return; const sets = document.getElementById('manual-sets').value; const reps = document.getElementById('manual-reps').value; const newEx = { name: name, sets: parseInt(sets) || 3, reps: reps || "12", tip: "Соблюдай технику", description: "Добавлено вручную" }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
         window.getAiProTip = async function() { const ex = currentProgram[currentExerciseIndex]; const tipEl = document.getElementById('active-ex-tip'); tipEl.innerHTML = `<span class="animate-pulse text-purple-600">Спрашиваю у тренера...</span>`; const prompt = `Дай ОДИН короткий, профессиональный совет по биомеханике (лайфхак) для упражнения "${ex.name}", чтобы лучше чувствовать целевую мышцу. Максимум 10-12 слов.`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Концентрируйся на работе мышц."; tipEl.innerText = "💡 " + text; tipEl.classList.add("bg-purple-50", "text-purple-800", "border", "border-purple-200"); } catch (e) { tipEl.innerText = "Ошибка связи с тренером."; } }
