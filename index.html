@@ -72,7 +72,7 @@
             opacity: 0.6;
         }
         .safe-area-bottom { z-index: 50; }
-        .full-screen-modal { z-index: 100; } /* Максимальный приоритет */
+        .full-screen-modal { z-index: 100; }
         .fab-btn { box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); }
 
         .chart-bar-container {
@@ -342,9 +342,32 @@
 
     <div id="ai-loading" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100] backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl flex flex-col items-center gap-4 shadow-2xl w-64 text-center"><div class="loader"></div><p id="loading-text" class="text-sm font-bold text-gray-700 animate-pulse">ИИ составляет план...</p></div></div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA-YFhTWpHYvAZzLkmskSckZyqNnfc4280",
+            authDomain: "gym-pro-db.firebaseapp.com",
+            projectId: "gym-pro-db",
+            storageBucket: "gym-pro-db.firebasestorage.app",
+            messagingSenderId: "746009678402",
+            appId: "1:746009678402:web:77f25bac12ca872fd913db",
+            measurementId: "G-KCYY36PMRD"
+        };
+
+        let app, db, analytics;
+        try {
+            app = initializeApp(firebaseConfig);
+            analytics = getAnalytics(app);
+            db = getFirestore(app);
+        } catch(e) {
+            console.error("Firebase init failed", e);
+        }
+
         const tg = window.Telegram.WebApp;
-        const apiKey = ""; 
+        const apiKey = "AIzaSyB8TMVo4mP31EEJrvJ-lFXaWSWz3iWfms0"; 
         tg.expand();
         lucide.createIcons();
 
@@ -362,47 +385,85 @@
         let addModalType = 'strength';
         let isWorkoutActive = false;
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function saveToFirestore() {
+            if (!db) return;
+            const userId = tg.initDataUnsafe?.user?.id || localStorage.getItem('gym_local_id') || 'guest';
+            try {
+                await setDoc(doc(db, "users", String(userId)), userProfile, { merge: true });
+            } catch(e) { console.error("Cloud save failed", e); }
+        }
+
+        let saveTimeout;
+        function persistData() { 
+            localStorage.setItem('gymProProfile', JSON.stringify(userProfile)); 
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveToFirestore, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('current-date').innerText = new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+            
+            // 1. Get User Info
             const user = tg.initDataUnsafe?.user;
             if (user) {
                 userProfile.name = user.first_name || "Атлет";
-                document.getElementById('profile-name').value = userProfile.name;
-                updateAvatarInitial(userProfile.name);
+            } else {
+                if(!localStorage.getItem('gym_local_id')) localStorage.setItem('gym_local_id', 'user_' + Date.now());
             }
+
+            // 2. Load Local
             const savedProfile = localStorage.getItem('gymProProfile');
             if(savedProfile) {
                 try {
                     const parsed = JSON.parse(savedProfile);
                     userProfile = { ...userProfile, ...parsed };
-                    if(userProfile.isLocked) {
-                        ['profile-name', 'profile-age', 'profile-height'].forEach(id => { const el = document.getElementById(id); if(el) { el.disabled = true; el.classList.add('opacity-50'); }});
-                        document.getElementById('btn-save-profile').innerText = "К ТРЕНИРОВКЕ";
-                    }
-                    document.getElementById('profile-name').value = userProfile.name;
-                    document.getElementById('profile-age').value = userProfile.age;
-                    document.getElementById('profile-height').value = userProfile.height;
-                    document.getElementById('profile-weight').value = userProfile.weight;
-                    updateAvatarInitial(userProfile.name);
-                    selectGender(userProfile.gender);
-                    calculateBMI();
+                    applyProfileUI();
                 } catch(e) {}
             }
+
+            // 3. Load Cloud
+            if (db) {
+                const userId = tg.initDataUnsafe?.user?.id || localStorage.getItem('gym_local_id') || 'guest';
+                try {
+                    const docSnap = await getDoc(doc(db, "users", String(userId)));
+                    if (docSnap.exists()) {
+                        const cloudData = docSnap.data();
+                        userProfile = { ...userProfile, ...cloudData };
+                        applyProfileUI();
+                        persistData(); // Sync back to local
+                    }
+                } catch(e) { console.error("Cloud load failed", e); }
+            }
+
             renderHistoryList();
         });
 
-        function persistData() { localStorage.setItem('gymProProfile', JSON.stringify(userProfile)); }
-        function updateAvatarInitial(name) { document.getElementById('avatar-initial').innerText = name ? name[0].toUpperCase() : "?"; }
-        function syncProfileData() { if(userProfile.isLocked) return; userProfile.name = document.getElementById('profile-name').value; userProfile.age = document.getElementById('profile-age').value; userProfile.height = document.getElementById('profile-height').value; userProfile.weight = parseFloat(document.getElementById('profile-weight').value) || ""; updateAvatarInitial(userProfile.name); persistData(); }
-        function saveCurrentWeight() { const w = parseFloat(document.getElementById('profile-weight').value); if (!w) return; const dateStr = new Date().toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'}); userProfile.weightHistory.push({ weight: w, date: dateStr }); if(userProfile.weightHistory.length > 7) userProfile.weightHistory.shift(); persistData(); tg.HapticFeedback.notificationOccurred('success'); renderWeightChart(); alert(`Вес ${w} кг сохранен!`); }
-        function toggleWeightChart() { const section = document.getElementById('weight-progress-section'); const arrow = document.getElementById('chart-arrow'); section.classList.toggle('open'); arrow.style.transform = section.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; if (section.classList.contains('open')) renderWeightChart(); }
-        function renderWeightChart() { const container = document.getElementById('weight-chart'); const datesContainer = document.getElementById('weight-chart-dates'); if (userProfile.weightHistory.length < 2) { container.innerHTML = '<div class="w-full text-center text-xs opacity-50 pb-4">Нужно минимум 2 замера</div>'; return; } const weights = userProfile.weightHistory.map(x => x.weight); const minW = Math.min(...weights) - 2; const maxW = Math.max(...weights) + 2; const range = maxW - minW; container.innerHTML = userProfile.weightHistory.map(entry => { const heightPct = ((entry.weight - minW) / range) * 80 + 20; return `<div class="chart-bar" style="height: ${heightPct}%"><span class="chart-label">${entry.weight}</span></div>`; }).join(''); datesContainer.innerHTML = userProfile.weightHistory.map(entry => `<div style="flex:1" class="chart-date">${entry.date}</div>`).join(''); }
-        function selectGender(gender) { if (userProfile.isLocked && gender !== userProfile.gender) return; userProfile.gender = gender; const btnMale = document.getElementById('gender-male'); const btnFemale = document.getElementById('gender-female'); if (gender === 'male') { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-blue-600 shadow-sm"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; } else { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-pink-600 shadow-sm"; } persistData(); }
-        function calculateBMI() { const h = parseFloat(document.getElementById('profile-height').value); const w = parseFloat(document.getElementById('profile-weight').value); const display = document.getElementById('bmi-display'); if (h > 0 && w > 0) { const bmi = w / ((h / 100) ** 2); display.innerText = bmi.toFixed(1); } else { display.innerText = "--.--"; } }
-        function handleProfileButton() { if (!userProfile.isLocked) saveAndLockProfile(); else switchTab('workout'); }
-        function saveAndLockProfile() { syncProfileData(); if (!userProfile.name || !userProfile.weight || !userProfile.height || !userProfile.age) { tg.HapticFeedback.notificationOccurred('error'); alert("Заполни все поля!"); return; } userProfile.isLocked = true; ['profile-name', 'profile-age', 'profile-height'].forEach(id => { document.getElementById(id).disabled = true; document.getElementById(id).classList.add('opacity-50'); }); document.getElementById('btn-save-profile').innerText = "К ТРЕНИРОВКЕ"; saveCurrentWeight(); persistData(); tg.HapticFeedback.notificationOccurred('success'); switchTab('workout'); }
+        function applyProfileUI() {
+            if(userProfile.isLocked) {
+                ['profile-name', 'profile-age', 'profile-height'].forEach(id => { const el = document.getElementById(id); if(el) { el.disabled = true; el.classList.add('opacity-50'); }});
+                document.getElementById('btn-save-profile').innerText = "К ТРЕНИРОВКЕ";
+            }
+            document.getElementById('profile-name').value = userProfile.name;
+            document.getElementById('profile-age').value = userProfile.age;
+            document.getElementById('profile-height').value = userProfile.height;
+            document.getElementById('profile-weight').value = userProfile.weight;
+            updateAvatarInitial(userProfile.name);
+            selectGender(userProfile.gender);
+            calculateBMI();
+        }
 
-        function switchTab(tabName) {
+        // Expose functions to window because type="module" isolates scope
+        window.updateAvatarInitial = function(name) { document.getElementById('avatar-initial').innerText = name ? name[0].toUpperCase() : "?"; }
+        window.syncProfileData = function() { if(userProfile.isLocked) return; userProfile.name = document.getElementById('profile-name').value; userProfile.age = document.getElementById('profile-age').value; userProfile.height = document.getElementById('profile-height').value; userProfile.weight = parseFloat(document.getElementById('profile-weight').value) || ""; updateAvatarInitial(userProfile.name); persistData(); }
+        window.saveCurrentWeight = function() { const w = parseFloat(document.getElementById('profile-weight').value); if (!w) return; const dateStr = new Date().toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit'}); userProfile.weightHistory.push({ weight: w, date: dateStr }); if(userProfile.weightHistory.length > 7) userProfile.weightHistory.shift(); persistData(); tg.HapticFeedback.notificationOccurred('success'); renderWeightChart(); alert(`Вес ${w} кг сохранен!`); }
+        window.toggleWeightChart = function() { const section = document.getElementById('weight-progress-section'); const arrow = document.getElementById('chart-arrow'); section.classList.toggle('open'); arrow.style.transform = section.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)'; if (section.classList.contains('open')) renderWeightChart(); }
+        window.renderWeightChart = function() { const container = document.getElementById('weight-chart'); const datesContainer = document.getElementById('weight-chart-dates'); if (userProfile.weightHistory.length < 2) { container.innerHTML = '<div class="w-full text-center text-xs opacity-50 pb-4">Нужно минимум 2 замера</div>'; return; } const weights = userProfile.weightHistory.map(x => x.weight); const minW = Math.min(...weights) - 2; const maxW = Math.max(...weights) + 2; const range = maxW - minW; container.innerHTML = userProfile.weightHistory.map(entry => { const heightPct = ((entry.weight - minW) / range) * 80 + 20; return `<div class="chart-bar" style="height: ${heightPct}%"><span class="chart-label">${entry.weight}</span></div>`; }).join(''); datesContainer.innerHTML = userProfile.weightHistory.map(entry => `<div style="flex:1" class="chart-date">${entry.date}</div>`).join(''); }
+        window.selectGender = function(gender) { if (userProfile.isLocked && gender !== userProfile.gender) return; userProfile.gender = gender; const btnMale = document.getElementById('gender-male'); const btnFemale = document.getElementById('gender-female'); if (gender === 'male') { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-blue-600 shadow-sm"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; } else { btnMale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all text-gray-400"; btnFemale.className = "flex-1 py-2 rounded-lg text-sm font-bold transition-all bg-white text-pink-600 shadow-sm"; } persistData(); }
+        window.calculateBMI = function() { const h = parseFloat(document.getElementById('profile-height').value); const w = parseFloat(document.getElementById('profile-weight').value); const display = document.getElementById('bmi-display'); if (h > 0 && w > 0) { const bmi = w / ((h / 100) ** 2); display.innerText = bmi.toFixed(1); } else { display.innerText = "--.--"; } }
+        window.handleProfileButton = function() { if (!userProfile.isLocked) saveAndLockProfile(); else switchTab('workout'); }
+        window.saveAndLockProfile = function() { syncProfileData(); if (!userProfile.name || !userProfile.weight || !userProfile.height || !userProfile.age) { tg.HapticFeedback.notificationOccurred('error'); alert("Заполни все поля!"); return; } userProfile.isLocked = true; ['profile-name', 'profile-age', 'profile-height'].forEach(id => { document.getElementById(id).disabled = true; document.getElementById(id).classList.add('opacity-50'); }); document.getElementById('btn-save-profile').innerText = "К ТРЕНИРОВКЕ"; saveCurrentWeight(); persistData(); tg.HapticFeedback.notificationOccurred('success'); switchTab('workout'); }
+
+        window.switchTab = function(tabName) {
             ['profile', 'workout', 'history'].forEach(t => { document.getElementById(`tab-${t}`).classList.add('hidden-view'); document.getElementById(`nav-${t}`).classList.remove('active'); });
             document.getElementById(`tab-${tabName}`).classList.remove('hidden-view');
             document.getElementById(`nav-${tabName}`).classList.add('active');
@@ -411,7 +472,7 @@
             window.scrollTo({ top: 0 });
         }
 
-        function setWorkoutType(type) {
+        window.setWorkoutType = function(type) {
             document.getElementById('type-strength').classList.remove('border-blue-500', 'bg-blue-50');
             document.getElementById('type-cardio').classList.remove('border-blue-500', 'bg-blue-50');
             document.getElementById('focus-area-strength').classList.add('hidden');
@@ -420,7 +481,7 @@
             else { document.getElementById('type-cardio').classList.add('border-blue-500', 'bg-blue-50'); document.getElementById('focus-area-cardio').classList.remove('hidden'); }
         }
 
-        function startCustomWorkout() {
+        window.startCustomWorkout = function() {
             currentProgram = [];
             currentWorkoutTitle = "Своя тренировка";
             workoutLogs = {};
@@ -430,7 +491,7 @@
             setTimeout(openAddExerciseModal, 300);
         }
 
-        async function generateAIProgram(focus) {
+        window.generateAIProgram = async function(focus) {
             const loader = document.getElementById('ai-loading');
             document.getElementById('loading-text').innerText = `Составляю план на: ${focus}...`;
             loader.style.display = 'flex';
@@ -453,7 +514,7 @@
             } catch (e) { alert("Ошибка ИИ. Попробуй еще раз."); } finally { loader.style.display = 'none'; }
         }
 
-        function renderProgramList(title) {
+        window.renderProgramList = function(title) {
             document.getElementById('plan-title').innerText = `${title}`;
             const list = document.getElementById('program-list');
             if (currentProgram.length === 0) {
@@ -471,17 +532,14 @@
             lucide.createIcons();
         }
 
-        function startWorkoutRoutine() {
+        window.startWorkoutRoutine = function() {
             try {
                 if (currentProgram.length === 0) { alert("Добавь упражнения!"); return; }
                 isWorkoutActive = true;
                 workoutLogs = {}; 
                 loadActiveExercise(0);
-                
-                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ: СКРЫВАЕМ ПЛАН, ПОКАЗЫВАЕМ ТРЕНИРОВКУ ---
                 document.getElementById('view-plan').classList.add('hidden-view');
                 document.getElementById('view-active-workout').classList.remove('hidden-view');
-                
             } catch (e) { console.error(e); alert("Ошибка запуска тренировки."); }
         }
 
@@ -553,7 +611,7 @@
             lucide.createIcons();
         }
 
-        function logActiveSet() {
+        window.logActiveSet = function() {
             const weight = parseFloat(document.getElementById('active-weight').value);
             const reps = parseInt(document.getElementById('active-reps').value);
             if (!weight || !reps) { tg.HapticFeedback.notificationOccurred('error'); return; }
@@ -596,11 +654,11 @@
             timerInterval = setInterval(update, 1000);
         }
 
-        function skipRest() { clearInterval(timerInterval); document.getElementById('modal-rest').classList.add('hidden-view'); updateSetsIndicator(); }
-        function nextExercise() { loadActiveExercise(currentExerciseIndex + 1); }
-        function skipCurrentExercise() { if(confirm("Пропустить это упражнение?")) { nextExercise(); } }
+        window.skipRest = function() { clearInterval(timerInterval); document.getElementById('modal-rest').classList.add('hidden-view'); updateSetsIndicator(); }
+        window.nextExercise = function() { loadActiveExercise(currentExerciseIndex + 1); }
+        window.skipCurrentExercise = function() { if(confirm("Пропустить это упражнение?")) { nextExercise(); } }
 
-        function finishWorkout(skipConfirm = false) {
+        window.finishWorkout = function(skipConfirm = false) {
             if (!skipConfirm && !confirm("Закончить тренировку и сохранить в историю?")) return;
             document.getElementById('modal-workout-summary').classList.remove('hidden-view');
             let totalSets = 0;
@@ -623,7 +681,7 @@
             } catch (e) { container.innerText = "Тренер временно недоступен, но ты все равно молодец!"; }
         }
 
-        function closeSummaryAndSave() {
+        window.closeSummaryAndSave = function() {
             document.getElementById('modal-workout-summary').classList.add('hidden-view');
             const sessionData = { id: Date.now(), date: new Date().toLocaleDateString('ru-RU'), title: currentWorkoutTitle, logs: JSON.parse(JSON.stringify(workoutLogs)), program: JSON.parse(JSON.stringify(currentProgram)) };
             userProfile.workoutHistory.push(sessionData);
@@ -637,7 +695,7 @@
             switchTab('history');
         }
 
-        function renderHistoryList() {
+        window.renderHistoryList = function() {
             const list = document.getElementById('history-list');
             if (userProfile.workoutHistory.length === 0) { list.innerHTML = `<div class="text-center py-10 opacity-40 text-sm">Пока нет завершенных тренировок</div>`; return; }
             list.innerHTML = [...userProfile.workoutHistory].reverse().map(session => {
@@ -648,7 +706,7 @@
             lucide.createIcons();
         }
 
-        function openHistoryDetail(id) {
+        window.openHistoryDetail = function(id) {
             const session = userProfile.workoutHistory.find(s => s.id === id);
             if (!session) return;
             document.getElementById('hist-detail-title').innerText = session.title;
@@ -660,8 +718,8 @@
             document.getElementById('modal-history-detail').classList.remove('hidden-view');
         }
 
-        function closeHistoryDetail() { document.getElementById('modal-history-detail').classList.add('hidden-view'); }
-        async function analyzeHistory() {
+        window.closeHistoryDetail = function() { document.getElementById('modal-history-detail').classList.add('hidden-view'); }
+        window.analyzeHistory = async function() {
             if (userProfile.workoutHistory.length === 0) { alert("Сначала потренируйся!"); return; }
             const loader = document.getElementById('ai-loading');
             document.getElementById('loading-text').innerText = "Анализирую прогресс...";
@@ -678,24 +736,24 @@
                 document.getElementById('history-ai-result').classList.remove('hidden');
             } catch (e) { alert("Ошибка анализа."); } finally { loader.style.display = 'none'; }
         }
-        function closeHistoryAi() { document.getElementById('history-ai-result').classList.add('hidden'); }
-        function replaceExercise(index) { replacementIndex = index; const ex = currentProgram[index]; document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = `Замена: "${ex.name}"`; document.getElementById('search-exercise').value = ""; document.getElementById('btn-add-text').innerText = "Введи название..."; document.getElementById('manual-inputs').classList.add('hidden'); document.getElementById('btn-add-manual').classList.add('opacity-50', 'pointer-events-none'); document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.remove('hidden'); setAddTab('strength'); document.getElementById('search-exercise').focus(); }
-        function triggerAiSuggestions() { if (replacementIndex === null) return; const ex = currentProgram[replacementIndex]; document.getElementById('btn-ask-ai').classList.add('hidden'); const aiContainer = document.getElementById('ai-suggestions-container'); const aiList = document.getElementById('ai-suggestions-list'); aiContainer.classList.remove('hidden'); aiList.innerHTML = `<div class="flex flex-col items-center justify-center py-6 gap-3"><div class="loader border-purple-200 border-t-purple-600"></div><span class="text-xs text-purple-600 font-bold animate-pulse text-center">Анализирую биомеханику...</span></div>`; generateAiReplacements(ex.name); }
-        function hideAiSuggestions() { document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.remove('hidden'); }
-        async function generateAiReplacements(exerciseName) { const prompt = `Замени упражнение "${exerciseName}". Предложи 3 альтернативы. JSON: [{"name": "Название", "reason": "Почему", "description_short": "Техника", "sets": 3, "reps": "10-12", "tip": "Совет"}]`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); let text = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]"; text = text.replace(/```json/g, '').replace(/```/g, '').trim(); renderAiSuggestions(JSON.parse(text)); } catch (e) { document.getElementById('ai-suggestions-list').innerHTML = `<div class="text-xs text-red-400 text-center py-2">Ошибка.</div>`; } }
-        function renderAiSuggestions(suggestions) { const list = document.getElementById('ai-suggestions-list'); if (suggestions.length === 0) { list.innerHTML = `<div class="text-xs text-gray-400 text-center">Нет рекомендаций</div>`; return; } list.innerHTML = suggestions.map((s) => { const sString = JSON.stringify(s).replace(/"/g, '&quot;'); return `<div onclick="applyReplacement(${sString})" class="ai-suggestion-card p-3 rounded-xl active:scale-[0.98] transition-transform cursor-pointer shadow-sm bg-white border border-purple-100 hover:border-purple-300"><div class="flex justify-between items-start mb-1"><span class="font-bold text-sm text-purple-900">${s.name}</span><div class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">Выбрать</div></div><div class="text-[10px] text-gray-500 mb-1 leading-tight"><span class="font-bold text-purple-700">Зачем:</span> ${s.reason}</div><div class="text-[10px] text-gray-600 italic leading-tight border-t border-purple-50 pt-1 mt-1">${s.description_short || "Техника стандартная."}</div></div>` }).join(''); lucide.createIcons(); }
-        function applyReplacement(newEx) { if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); } }
-        function showExerciseInfo(index) { const ex = currentProgram[index]; document.getElementById('info-title').innerText = ex.name; document.getElementById('info-description').innerText = ex.description || ex.tip || "Описание отсутствует."; document.getElementById('modal-info').classList.remove('hidden-view'); }
-        function closeInfoModal() { document.getElementById('modal-info').classList.add('hidden-view'); }
-        function backToSelector() { document.getElementById('view-plan').classList.add('hidden-view'); document.getElementById('view-selector').classList.remove('hidden'); }
-        function openAddExerciseModal() { replacementIndex = null; document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.add('hidden'); document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = "Добавить упражнение"; document.getElementById('search-exercise').value = ""; setAddTab('strength'); document.getElementById('search-exercise').focus(); }
-        function closeAddExerciseModal() { document.getElementById('modal-add-exercise').classList.add('hidden-view'); }
-        function setAddTab(type) { addModalType = type; const btnS = document.getElementById('tab-add-strength'); const btnC = document.getElementById('tab-add-cardio'); if (type === 'strength') { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; } else { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; } filterExercises(); }
-        function filterExercises() { const query = document.getElementById('search-exercise').value.toLowerCase(); const list = EXERCISE_DB[addModalType]; const container = document.getElementById('exercise-search-results'); const filtered = list.filter(ex => ex.toLowerCase().includes(query)); const btnText = document.getElementById('btn-add-text'); const btnManual = document.getElementById('btn-add-manual'); const inputsManual = document.getElementById('manual-inputs'); if (query.length > 0) { btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`; btnManual.classList.remove('opacity-50', 'pointer-events-none'); inputsManual.classList.remove('hidden'); } else { btnText.innerText = "Введи название выше..."; btnManual.classList.add('opacity-50', 'pointer-events-none'); inputsManual.classList.add('hidden'); } const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle'; container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join(''); lucide.createIcons(); }
-        function addExerciseDirectly(name) { const isCardio = addModalType === 'cardio'; const newEx = { name: name, sets: isCardio ? 1 : 3, reps: isCardio ? "20 мин" : "12", tip: "Техника важна!", description: "Описание добавлено вручную." }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
-        function addExerciseFromInput() { const name = document.getElementById('search-exercise').value; if(!name) return; const sets = document.getElementById('manual-sets').value; const reps = document.getElementById('manual-reps').value; const newEx = { name: name, sets: parseInt(sets) || 3, reps: reps || "12", tip: "Соблюдай технику", description: "Добавлено вручную" }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
-        async function getAiProTip() { const ex = currentProgram[currentExerciseIndex]; const tipEl = document.getElementById('active-ex-tip'); tipEl.innerHTML = `<span class="animate-pulse text-purple-600">Спрашиваю у тренера...</span>`; const prompt = `Дай ОДИН короткий, профессиональный совет по биомеханике (лайфхак) для упражнения "${ex.name}", чтобы лучше чувствовать целевую мышцу. Максимум 10-12 слов.`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Концентрируйся на работе мышц."; tipEl.innerText = "💡 " + text; tipEl.classList.add("bg-purple-50", "text-purple-800", "border", "border-purple-200"); } catch (e) { tipEl.innerText = "Ошибка связи с тренером."; } }
-        function closeActiveMode() { document.getElementById('view-active-workout').classList.add('hidden-view'); renderProgramList(document.getElementById('plan-title').innerText); document.getElementById('view-plan').classList.remove('hidden-view'); }
+        window.closeHistoryAi = function() { document.getElementById('history-ai-result').classList.add('hidden'); }
+        window.replaceExercise = function(index) { replacementIndex = index; const ex = currentProgram[index]; document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = `Замена: "${ex.name}"`; document.getElementById('search-exercise').value = ""; document.getElementById('btn-add-text').innerText = "Введи название..."; document.getElementById('manual-inputs').classList.add('hidden'); document.getElementById('btn-add-manual').classList.add('opacity-50', 'pointer-events-none'); document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.remove('hidden'); setAddTab('strength'); document.getElementById('search-exercise').focus(); }
+        window.triggerAiSuggestions = function() { if (replacementIndex === null) return; const ex = currentProgram[replacementIndex]; document.getElementById('btn-ask-ai').classList.add('hidden'); const aiContainer = document.getElementById('ai-suggestions-container'); const aiList = document.getElementById('ai-suggestions-list'); aiContainer.classList.remove('hidden'); aiList.innerHTML = `<div class="flex flex-col items-center justify-center py-6 gap-3"><div class="loader border-purple-200 border-t-purple-600"></div><span class="text-xs text-purple-600 font-bold animate-pulse text-center">Анализирую биомеханику...</span></div>`; generateAiReplacements(ex.name); }
+        window.hideAiSuggestions = function() { document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.remove('hidden'); }
+        window.generateAiReplacements = async function(exerciseName) { const prompt = `Замени упражнение "${exerciseName}". Предложи 3 альтернативы. JSON: [{"name": "Название", "reason": "Почему", "description_short": "Техника", "sets": 3, "reps": "10-12", "tip": "Совет"}]`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); let text = result.candidates?.[0]?.content?.parts?.[0]?.text || "[]"; text = text.replace(/```json/g, '').replace(/```/g, '').trim(); renderAiSuggestions(JSON.parse(text)); } catch (e) { document.getElementById('ai-suggestions-list').innerHTML = `<div class="text-xs text-red-400 text-center py-2">Ошибка.</div>`; } }
+        window.renderAiSuggestions = function(suggestions) { const list = document.getElementById('ai-suggestions-list'); if (suggestions.length === 0) { list.innerHTML = `<div class="text-xs text-gray-400 text-center">Нет рекомендаций</div>`; return; } list.innerHTML = suggestions.map((s) => { const sString = JSON.stringify(s).replace(/"/g, '&quot;'); return `<div onclick="applyReplacement(${sString})" class="ai-suggestion-card p-3 rounded-xl active:scale-[0.98] transition-transform cursor-pointer shadow-sm bg-white border border-purple-100 hover:border-purple-300"><div class="flex justify-between items-start mb-1"><span class="font-bold text-sm text-purple-900">${s.name}</span><div class="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-[10px] font-bold">Выбрать</div></div><div class="text-[10px] text-gray-500 mb-1 leading-tight"><span class="font-bold text-purple-700">Зачем:</span> ${s.reason}</div><div class="text-[10px] text-gray-600 italic leading-tight border-t border-purple-50 pt-1 mt-1">${s.description_short || "Техника стандартная."}</div></div>` }).join(''); lucide.createIcons(); }
+        window.applyReplacement = function(newEx) { if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); } }
+        window.showExerciseInfo = function(index) { const ex = currentProgram[index]; document.getElementById('info-title').innerText = ex.name; document.getElementById('info-description').innerText = ex.description || ex.tip || "Описание отсутствует."; document.getElementById('modal-info').classList.remove('hidden-view'); }
+        window.closeInfoModal = function() { document.getElementById('modal-info').classList.add('hidden-view'); }
+        window.backToSelector = function() { document.getElementById('view-plan').classList.add('hidden-view'); document.getElementById('view-selector').classList.remove('hidden'); }
+        window.openAddExerciseModal = function() { replacementIndex = null; document.getElementById('ai-suggestions-container').classList.add('hidden'); document.getElementById('btn-ask-ai').classList.add('hidden'); document.getElementById('modal-add-exercise').classList.remove('hidden-view'); document.getElementById('modal-add-title').innerText = "Добавить упражнение"; document.getElementById('search-exercise').value = ""; setAddTab('strength'); document.getElementById('search-exercise').focus(); }
+        window.closeAddExerciseModal = function() { document.getElementById('modal-add-exercise').classList.add('hidden-view'); }
+        window.setAddTab = function(type) { addModalType = type; const btnS = document.getElementById('tab-add-strength'); const btnC = document.getElementById('tab-add-cardio'); if (type === 'strength') { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; } else { btnS.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all text-gray-400"; btnC.className = "flex-1 py-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-600 shadow-sm"; } filterExercises(); }
+        window.filterExercises = function() { const query = document.getElementById('search-exercise').value.toLowerCase(); const list = EXERCISE_DB[addModalType]; const container = document.getElementById('exercise-search-results'); const filtered = list.filter(ex => ex.toLowerCase().includes(query)); const btnText = document.getElementById('btn-add-text'); const btnManual = document.getElementById('btn-add-manual'); const inputsManual = document.getElementById('manual-inputs'); if (query.length > 0) { btnText.innerText = `Добавить "${document.getElementById('search-exercise').value}"`; btnManual.classList.remove('opacity-50', 'pointer-events-none'); inputsManual.classList.remove('hidden'); } else { btnText.innerText = "Введи название выше..."; btnManual.classList.add('opacity-50', 'pointer-events-none'); inputsManual.classList.add('hidden'); } const icon = replacementIndex !== null ? 'refresh-cw' : 'plus-circle'; container.innerHTML = filtered.map(ex => `<div onclick="addExerciseDirectly('${ex}')" class="search-item p-3 border-b border-gray-50 flex justify-between items-center active:bg-gray-50"><span class="font-bold text-sm">${ex}</span><i data-lucide="${icon}" class="w-4 h-4 text-blue-500"></i></div>`).join(''); lucide.createIcons(); }
+        window.addExerciseDirectly = function(name) { const isCardio = addModalType === 'cardio'; const newEx = { name: name, sets: isCardio ? 1 : 3, reps: isCardio ? "20 мин" : "12", tip: "Техника важна!", description: "Описание добавлено вручную." }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
+        window.addExerciseFromInput = function() { const name = document.getElementById('search-exercise').value; if(!name) return; const sets = document.getElementById('manual-sets').value; const reps = document.getElementById('manual-reps').value; const newEx = { name: name, sets: parseInt(sets) || 3, reps: reps || "12", tip: "Соблюдай технику", description: "Добавлено вручную" }; if (replacementIndex !== null) { currentProgram[replacementIndex] = newEx; replacementIndex = null; } else { currentProgram.push(newEx); } closeAddExerciseModal(); renderProgramList(document.getElementById('plan-title').innerText); tg.HapticFeedback.notificationOccurred('success'); }
+        window.getAiProTip = async function() { const ex = currentProgram[currentExerciseIndex]; const tipEl = document.getElementById('active-ex-tip'); tipEl.innerHTML = `<span class="animate-pulse text-purple-600">Спрашиваю у тренера...</span>`; const prompt = `Дай ОДИН короткий, профессиональный совет по биомеханике (лайфхак) для упражнения "${ex.name}", чтобы лучше чувствовать целевую мышцу. Максимум 10-12 слов.`; try { const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); const result = await response.json(); const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Концентрируйся на работе мышц."; tipEl.innerText = "💡 " + text; tipEl.classList.add("bg-purple-50", "text-purple-800", "border", "border-purple-200"); } catch (e) { tipEl.innerText = "Ошибка связи с тренером."; } }
+        window.closeActiveMode = function() { document.getElementById('view-active-workout').classList.add('hidden-view'); renderProgramList(document.getElementById('plan-title').innerText); document.getElementById('view-plan').classList.remove('hidden-view'); }
 
         tg.onEvent('themeChanged', () => {
             document.body.style.backgroundColor = tg.themeParams.bg_color;
